@@ -1,0 +1,3 @@
+# مكتبات التشغيل (mediapipe يجيب وياه opencv-contrib-python و numpy، فلا تضيف opencv-python لأنهم يتعارضون)
+mediapipe==1.2.3
+psutil==7.2.2
