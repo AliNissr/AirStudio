@@ -1,4 +1,5 @@
 """التقاط الصور من الكاميرا، مع أخطاء واضحة. الصور تبقى بالذاكرة بس، ما تنحفظ أبداً."""
+import threading
 import time
 
 import cv2
@@ -26,6 +27,8 @@ class Camera:
             raise CameraError("NOT_FOUND")
         self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        # ملاحظة: جربنا CAP_PROP_FPS=30 وخلّى كاميرتك تثبت على 15، فما نحدده.
+        # الكاميرا تنزل لـ 15 لحالها بالضوء الضعيف (تعريض تلقائي)، وهذا من العتاد مو من الكود.
         self._cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # نريد أحدث صورة، مو صور قديمة متراكمة
         self._fails = 0
         # أول صورة: إذا ما إجت أبداً، الكاميرا محجوزة من برنامج ثاني
@@ -50,6 +53,48 @@ class Camera:
 
     def release(self) -> None:
         self._cap.release()
+
+
+class LatestFrameReader:
+    """يقرأ الكاميرا بخيط (Thread) بالخلفية ويحتفظ بأحدث صورة بس.
+
+    ليش؟ قراءة الكاميرا تاخذ ~33ms والنموذج ~33ms. إذا ورا بعض = 15 fps.
+    بالتوازي: النموذج يشتغل على صورة، والخيط يجيب الجاية بنفس الوقت = 30 fps.
+    """
+
+    def __init__(self, cam: Camera):
+        self._cam = cam
+        self._frame, self._error = None, None
+        self._new = threading.Event()  # "جرس" يرن لما تجي صورة جديدة
+        self._running = True
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
+
+    def _loop(self):
+        while self._running:
+            try:
+                f = self._cam.read()
+            except CameraError as e:
+                self._error = e
+                self._new.set()
+                return
+            if f is not None:
+                self._frame = f
+                self._new.set()
+
+    def read(self, timeout: float = 2.0) -> np.ndarray | None:
+        """ينتظر صورة جديدة (ما يرجع نفس الصورة مرتين)."""
+        if not self._new.wait(timeout):
+            raise CameraError("LOST")
+        self._new.clear()
+        if self._error:
+            raise self._error
+        return self._frame
+
+    def release(self) -> None:
+        self._running = False
+        self._thread.join(timeout=1)
+        self._cam.release()
 
 
 def frame_quality(frame: np.ndarray, dark_threshold: int = 40) -> str | None:

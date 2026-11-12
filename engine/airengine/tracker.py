@@ -1,6 +1,9 @@
 """المتتبع: يلف MediaPipe HandLandmarker ويرجع نقاط اليد بالبكسل."""
+import os
 from dataclasses import dataclass
 from pathlib import Path
+
+os.environ.setdefault("GLOG_minloglevel", "2")  # نسكّت رسائل MediaPipe الداخلية (لازم قبل الـ import)
 
 import cv2
 import mediapipe as mp
@@ -17,6 +20,13 @@ class Hand:
     landmarks: list  # 21 نقطة [x, y, z] بالبكسل (x و y بنفس المقياس)
     handedness: str  # "Left" أو "Right"
     score: float     # ثقة النموذج إنها يد (0 إلى 1)
+
+
+def hand_unclear(pts: list, width: int, height: int, min_px: float = 40, margin: float = 5) -> bool:
+    """اليد "مو واضحة" إذا مكصوصة على حافة الصورة، أو صغيرة هواية (بعيدة)."""
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    cut = min(xs) < margin or min(ys) < margin or max(xs) > width - margin or max(ys) > height - margin
+    return cut or max(max(xs) - min(xs), max(ys) - min(ys)) < min_px
 
 
 class HandTracker:

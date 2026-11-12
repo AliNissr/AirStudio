@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from airengine.camera import Camera, CameraError, frame_quality
+from airengine.camera import Camera, CameraError, LatestFrameReader, frame_quality
 from airengine.messages import AR
 
 
@@ -58,6 +58,19 @@ def test_read_mirrors_frame():
     cam = Camera(opener=lambda *_: FakeCapture(frames=[f, f]))
     out = cam.read()
     assert out[0, -1, 0] == 255  # صار يمين (مثل المراية)
+
+
+def test_latest_reader_returns_frames_then_lost():
+    frames = [black(i) for i in range(1, 4)]
+    reader = LatestFrameReader(Camera(opener=lambda *_: FakeCapture(frames=frames)))
+    try:
+        assert reader.read() is not None
+        with pytest.raises(CameraError) as e:
+            for _ in range(5):
+                reader.read()
+        assert e.value.code == "LOST"
+    finally:
+        reader.release()
 
 
 def test_dark_frame_detected():
