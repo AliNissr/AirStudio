@@ -3,6 +3,7 @@
   "pinch_exit": 0.35,
   "debounce_frames": 3,
   "extend_ratio": 1.1,
+  "curl_ratio": 0.9,
   "one_euro": { "min_cutoff": 1.0, "beta": 0.007, "d_cutoff": 1.0 },
   "perf": { "active_fps": 30, "idle_fps": 5, "cpu_limit": 25 },
   "quality": { "dark_threshold": 40, "min_hand_score": 0.6 }
