@@ -24,7 +24,8 @@ export async function openCamera(video) {
   if (!navigator.mediaDevices?.getUserMedia) throw new TrackerError('NO_CAMERA_API');
   try {
     video.srcObject = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { max: 30 }, facingMode: 'user' },
+      // نطلب 30 صراحة. الكاميرا ممكن تعطي أقل بالضوء الضعيف، و hands.js يقيس الفعلي ويبلّغ
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30, max: 30 }, facingMode: 'user' },
       audio: false,
     });
   } catch (e) {
@@ -35,14 +36,16 @@ export async function openCamera(video) {
 }
 
 let vision; // نحمّل الـ wasm مرة وحدة بس
-export async function createTracker({ numHands = 2, delegate = 'GPU' } = {}) {
+// numHands: 'auto' = يدين على GPU، ويد وحدة على CPU (يدين على CPU = 90 ms بجهازك، ثقيل هواية)
+export async function createTracker({ numHands = 'auto', delegate = 'GPU' } = {}) {
   vision ??= await FilesetResolver.forVisionTasks(WASM);
+  const n = numHands === 'auto' ? (delegate === 'GPU' ? 2 : 1) : numHands;
   let lm;
   try {
     lm = await HandLandmarker.createFromOptions(vision, {
       baseOptions: { modelAssetPath: MODEL, delegate },
       runningMode: 'VIDEO',
-      numHands,
+      numHands: n,
     });
   } catch (e) {
     if (delegate === 'GPU') return createTracker({ numHands, delegate: 'CPU' }); // ماكو WebGL؟ نرجع للمعالج
@@ -51,6 +54,7 @@ export async function createTracker({ numHands = 2, delegate = 'GPU' } = {}) {
   let lastTs = -1;
   return {
     delegate,
+    numHands: n,
     // يرجع اليدين بالبكسل ومعكوسة مثل المراية (يدك اليمين تبين يمين الشاشة)
     detect(video, tsMs) {
       const ts = Math.max(Math.round(tsMs), lastTs + 1); // الوقت لازم يتزايد دايماً
