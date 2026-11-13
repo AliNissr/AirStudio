@@ -69,6 +69,7 @@ export function createRoomMode({ stage, plan, blip }) {
 
   return {
     room,
+    get view() { return view; },
     async enter() {
       if (!view) {
         const { RoomView } = await import('./room3d.js'); // three.js (2 MB) ينحمّل بس إذا احتجناه
