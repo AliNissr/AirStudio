@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AirStudio — قياس الأداء</title>
+<style>
+  :root { color-scheme: dark; --bg: #0f1115; --panel: #181b22; --text: #e8e9ec; --muted: #9aa0ab; --accent: #6ea8ff; --rec: #ff4d4f; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, "Segoe UI", Tahoma, sans-serif; padding: 24px 16px; }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p { color: var(--muted); margin: 0 0 16px; }
+  .stage { position: relative; background: #000; border-radius: 12px; overflow: hidden; aspect-ratio: 4/3; max-width: 480px; }
+  video, canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  video { transform: scaleX(-1); opacity: .6; }
+  .cam { position: absolute; top: 10px; inset-inline-start: 10px; background: #000a; padding: 2px 10px; border-radius: 99px; font-size: 13px; display: none; }
+  .cam::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--rec); margin-inline-end: 6px; }
+  .status { position: absolute; bottom: 10px; inset-inline: 10px; background: #000a; padding: 6px 10px; border-radius: 8px; font-size: 14px; }
+  button { background: var(--accent); color: #08111f; border: 0; border-radius: 8px; padding: 10px 20px; font: inherit; font-weight: 600; cursor: pointer; margin: 16px 0; }
+  button:disabled { opacity: .5; cursor: default; }
+  table { border-collapse: collapse; width: 100%; background: var(--panel); border-radius: 8px; overflow: hidden; }
+  th, td { padding: 8px 12px; text-align: start; border-bottom: 1px solid #262a33; font-variant-numeric: tabular-nums; }
+  th { color: var(--muted); font-weight: 500; }
+  .err { color: #ffb4a9; }
+</style>
+</head>
+<body>
+<main>
+  <h1>قياس أداء تتبع اليد بالمتصفح</h1>
+  <p>خلي يدينك الثنتين قدام الكاميرا طول القياس (40 ثانية تقريباً). الصور ما تنحفظ ولا تطلع من جهازك.</p>
+  <div class="stage">
+    <video id="video" playsinline muted></video>
+    <canvas id="overlay" width="640" height="480"></canvas>
+    <div class="cam" id="cam">الكاميرا شغالة</div>
+    <div class="status" id="status">اضغط "ابدأ القياس".</div>
+  </div>
+  <button id="start">ابدأ القياس</button>
+  <table>
+    <thead><tr><th>الأيادي</th><th>المعالج</th><th>FPS</th><th>وقت النموذج</th><th>إطارات بيها يدين</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+<script type="module">
+import { openCamera, createTracker, TrackerError } from './js/tracker.js';
+import { AR } from './js/messages.js';
+
+const $ = (id) => document.getElementById(id);
+const video = $('video'), ctx = $('overlay').getContext('2d');
+const SECONDS = 10;
+const CASES = [[1, 'GPU'], [2, 'GPU'], [1, 'CPU'], [2, 'CPU']];
+
+function draw(hands) {
+  ctx.clearRect(0, 0, 640, 480);
+  ctx.fillStyle = '#6ea8ff';
+  for (const h of hands) for (const [x, y] of h.landmarks) ctx.fillRect(x - 3, y - 3, 6, 6);
+}
+
+// يشغّل حالة وحدة لمدة SECONDS ويرجع الأرقام
+async function runCase(numHands, delegate) {
+  const tracker = await createTracker({ numHands, delegate });
+  let frames = 0, modelMs = 0, two = 0;
+  const start = performance.now();
+  await new Promise((done) => {
+    const step = () => {
+      const now = performance.now();
+      if (now - start > SECONDS * 1000) return done();
+      const a = performance.now();
+      const hands = tracker.detect(video, now);
+      modelMs += performance.now() - a;
+      frames++;
+      two += hands.length === 2;
+      draw(hands);
+      $('status').textContent = `يقيس: ${numHands} يد، ${tracker.delegate}... ${Math.ceil(SECONDS - (now - start) / 1000)} ث`;
+      video.requestVideoFrameCallback(step); // ننتظر إطار كاميرا جديد
+    };
+    video.requestVideoFrameCallback(step);
+  });
+  tracker.close();
+  const secs = (performance.now() - start) / 1000;
+  return { numHands, delegate: tracker.delegate, fps: frames / secs, ms: modelMs / frames, two: two / frames };
+}
+
+$('start').onclick = async () => {
+  $('start').disabled = true;
+  $('rows').innerHTML = '';
+  let stop;
+  try {
+    stop = await openCamera(video);
+    $('cam').style.display = 'block';
+    for (const [n, d] of CASES) {
+      const r = await runCase(n, d);
+      $('rows').insertAdjacentHTML('beforeend',
+        `<tr><td>${r.numHands}</td><td>${r.delegate}</td><td>${r.fps.toFixed(1)}</td><td>${r.ms.toFixed(1)} ms</td><td>${Math.round(r.two * 100)}%</td></tr>`);
+    }
+    $('status').textContent = 'خلص القياس. انسخ الجدول وأرسله.';
+  } catch (e) {
+    $('status').innerHTML = `<span class="err">${AR[e instanceof TrackerError ? e.code : 'NO_MODEL']}</span>`;
+    console.error(e);
+  } finally {
+    stop?.();
+    $('cam').style.display = 'none';
+    $('start').disabled = false;
+  }
+};
+</script>
+</body>
+</html>
