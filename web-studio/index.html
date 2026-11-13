@@ -16,6 +16,11 @@
       <button class="mode" aria-pressed="false" data-mode="room">الغرفة 3D</button>
     </nav>
     <div class="actions">
+      <button class="icon" id="open" title="افتح تصميم محفوظ (ملف JSON)">افتح</button>
+      <button class="icon" id="export" title="نزّل التصميم كملف JSON حتى ترجعله أو تشاركه">احفظ ملف</button>
+      <button class="icon" id="png" title="نزّل صورة PNG من المنظر الحالي">صورة</button>
+      <input type="file" id="file" accept=".json,application/json" hidden>
+      <span class="sep" aria-hidden="true"></span>
       <button class="icon" id="sound" aria-pressed="true" title="الأصوات">صوت</button>
       <button class="icon" id="help" title="شرح الإيماءات">؟</button>
       <button class="camera" id="camera" aria-pressed="false">شغّل الكاميرا</button>

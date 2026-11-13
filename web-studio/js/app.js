@@ -9,6 +9,7 @@ import { Plan } from './plan.js';
 import { PlanInteraction } from './interaction.js';
 import { PlanView } from './plan_view.js';
 import { createRoomMode } from './room_mode.js';
+import { serialize, parseDesign, applyDesign, MAX_BYTES } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
 const HAND_COLORS = ['#e8b341', '#4fc1cf'];
@@ -154,6 +155,77 @@ addEventListener('keydown', (e) => {
   if (tool && !e.ctrlKey && !e.altKey) setTool(tool);
 });
 addEventListener('resize', () => view.render());
+
+// ===== الحفظ والتصدير =====
+const SAVE_KEY = 'airstudio.design';
+let lastSaved = null, saveWarned = false;
+
+function download(blob, name) {
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: name });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// حفظ تلقائي: كل ثانية نقارن، ونكتب بس إذا تغيّر شي (التصميم صغير، فالمقارنة رخيصة)
+function autosave() {
+  const text = JSON.stringify(serialize(plan, roomMode.room));
+  if (text === lastSaved) return;
+  try {
+    localStorage.setItem(SAVE_KEY, text);
+    lastSaved = text;
+  } catch {
+    if (!saveWarned) toast('SAVE_FAILED');
+    saveWarned = true;
+  }
+}
+
+async function afterLoad() {
+  if (state.mode === 'room') await roomMode.enter();
+  else view.render({});
+  updateChrome();
+}
+
+// أول ما تنفتح الصفحة: نرجّع آخر تصميم. حتى المحفوظ بالمتصفح نفحصه، ممكن يكون معطوب
+try {
+  const saved = localStorage.getItem(SAVE_KEY);
+  const r = saved && parseDesign(saved);
+  if (r?.ok) {
+    applyDesign(r.design, plan, roomMode.room);
+    plan.history = [];
+    roomMode.room.history = []; // فتح الصفحة مو خطوة تتراجع عنها
+    lastSaved = saved;
+  } else if (saved) console.warn('AirStudio: التصميم المحفوظ معطوب، بدينا من جديد', r?.error);
+} catch { /* localStorage مقفول: نبدي فاضي */ }
+setInterval(autosave, 1000);
+addEventListener('pagehide', autosave);
+
+$('export').onclick = () => {
+  autosave();
+  download(new Blob([JSON.stringify(serialize(plan, roomMode.room), null, 1)], { type: 'application/json' }), 'airstudio-design.json');
+};
+$('open').onclick = () => $('file').click();
+$('file').onchange = async () => {
+  const file = $('file').files[0];
+  $('file').value = ''; // حتى تكدر تفتح نفس الملف مرة ثانية
+  if (!file) return;
+  if (file.size > MAX_BYTES) { toast('TOO_BIG'); return; }
+  const r = parseDesign(await file.text());
+  if (!r.ok) { toast(r.error); return; }
+  applyDesign(r.design, plan, roomMode.room);
+  await afterLoad();
+  toast('IMPORTED');
+};
+$('png').onclick = async () => {
+  if (state.mode === 'room') { download(await roomMode.snapshot(), 'airstudio-room.png'); return; }
+  // المخطط: الـ canvas شفاف، فنرسمه فوك لون الورقة
+  const src = $('plan'), out = Object.assign(document.createElement('canvas'), { width: src.width, height: src.height });
+  const g = out.getContext('2d');
+  g.fillStyle = '#fbfaf7';
+  g.fillRect(0, 0, out.width, out.height);
+  g.drawImage(src, 0, 0);
+  out.toBlob((b) => download(b, 'airstudio-plan.png'), 'image/png');
+};
+
 view.setTool('wall');
 view.render({});
 updateChrome();
