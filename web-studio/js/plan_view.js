@@ -14,7 +14,13 @@ export class PlanView {
     this.bindMouse();
   }
 
-  get ppm() { return Math.max(40, this.canvas.clientWidth / VIEW_METERS); } // بكسل لكل متر
+  // بكسل لكل متر: الورقة = 12 م، وتتوسع إذا المخطط (مثلاً ملف مفتوح) أكبر، حتى ما تطلع جدران برة الشاشة
+  // shortcut: ما نحرّك المنظر، فجدران بإحداثيات سالبة تبقى برة؛ نضيف تحريك (pan) إذا احتجناه
+  get ppm() {
+    const b = this.plan.bounds(), w = this.canvas.clientWidth, h = this.canvas.clientHeight || 1;
+    const meters = Math.max(VIEW_METERS, b ? b.maxX + 1 : 0, b ? (b.maxY + 1) * (w / h) : 0);
+    return Math.max(20, w / meters);
+  }
   toMeters(p) { return { x: p.x / this.ppm, y: p.y / this.ppm }; }
   toPx(p) { return { x: p.x * this.ppm, y: p.y * this.ppm }; }
 
@@ -59,7 +65,8 @@ export class PlanView {
     this.state = state;
     const c = this.canvas, dpr = devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
     if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
-    c.parentElement.style.setProperty('--m', `${this.ppm}px`); // شبكة الورقة = متر حقيقي
+    const m = `${this.ppm}px`; // شبكة الورقة = متر حقيقي. نكتبها بس إذا تغيّرت (هذي الدالة تنادى كل إطار)
+    if (m !== this.lastM) { c.parentElement.style.setProperty('--m', m); this.lastM = m; }
     const g = c.getContext('2d');
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, h);

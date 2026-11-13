@@ -66,9 +66,16 @@ export async function startHands({ video, onFrame, onStatus = () => {} }) {
       lastDarkCheck = now;
       onStatus(brightness(video) < DARK_LEVEL ? 'DARK' : 'OK');
     }
+    const t0 = performance.now();
     const raw = tracker.detect(video, now);
+    const t1 = performance.now();
     if (raw.length) lastHand = now;
     onFrame(pipeline.process(raw, now / 1000, video.videoWidth, video.videoHeight));
+    // متوسط متحرك: 10% للقياس الجديد، حتى الرقم ما يرجف
+    const avg = (old, v) => (old == null ? v : old * 0.9 + v * 0.1);
+    info.modelMs = avg(info.modelMs, t1 - t0);                    // النموذج بس
+    info.frameMs = avg(info.frameMs, performance.now() - t0);     // النموذج + الرسم (المخطط أو three.js)
+    info.hands = raw.length;
   };
   video.requestVideoFrameCallback(step);
 

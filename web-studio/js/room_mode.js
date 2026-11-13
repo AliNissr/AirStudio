@@ -17,6 +17,7 @@ export function createRoomMode({ stage, plan, blip }) {
     last = { ...last, ...extra };
     view?.sync(room.items, { ghost: last.ghost, selected: ui.selected, removing: last.removeProgress > 0 });
     $('rotate').disabled = $('remove').disabled = !ui.selected;
+    $('room-undo').disabled = !room.history.length;
   }
 
   // ===== الماوس =====
@@ -27,7 +28,8 @@ export function createRoomMode({ stage, plan, blip }) {
       canvas.setPointerCapture(e.pointerId);
       const p = at(e), item = p && room.hitTest(p);
       ui.selected = item?.id ?? null;
-      if (item) { room.checkpoint(); drag = { item: item.id, off: { x: item.x - p.x, y: item.y - p.y } }; }
+      // checkpoint بأول حركة فعلية، مو بالضغطة: ضغطة للاختيار بس ما لازم تصير خطوة تراجع فاضية
+      if (item) drag = { item: item.id, off: { x: item.x - p.x, y: item.y - p.y }, moved: false };
       else drag = { orbit: true, x: e.clientX, y: e.clientY };
       refresh();
     });
@@ -39,7 +41,9 @@ export function createRoomMode({ stage, plan, blip }) {
         drag.y = e.clientY;
       } else {
         const p = at(e);
-        if (p) room.move(drag.item, { x: p.x + drag.off.x, y: p.y + drag.off.y }, false);
+        if (!p) return;
+        if (!drag.moved) { room.checkpoint(); drag.moved = true; }
+        room.move(drag.item, { x: p.x + drag.off.x, y: p.y + drag.off.y }, false);
         refresh();
       }
     });
@@ -60,6 +64,7 @@ export function createRoomMode({ stage, plan, blip }) {
   const removeSelected = () => { if (ui.selected) { room.remove(ui.selected); ui.selected = null; blip(240, 60); refresh(); } };
   $('rotate').onclick = rotateSelected;
   $('remove').onclick = removeSelected;
+  $('room-undo').onclick = () => { room.undo(); if (!room.get(ui.selected)) ui.selected = null; refresh(); };
   stage.querySelectorAll('[data-view]').forEach((b) => {
     b.onclick = () => {
       view.setPreset(b.dataset.view);

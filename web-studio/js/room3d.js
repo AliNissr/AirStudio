@@ -7,6 +7,14 @@ import {
 import { buildFurniture } from './furniture.js';
 
 const WALL_H = 2.6, WALL_T = 0.15;
+
+// نحرر ذاكرة كارت الشاشة. materials=false للأثاث لأن خاماته مشتركة بين كل القطع
+function dispose(obj, materials = true) {
+  obj.traverse((o) => {
+    o.geometry?.dispose();
+    if (materials) [o.material].flat().forEach((m) => m?.dispose());
+  });
+}
 const PRESETS = {
   persp: { yaw: Math.PI / 4, pitch: 0.62 },
   top: { yaw: 0, pitch: 1.55 },
@@ -59,7 +67,7 @@ export class RoomView {
 
   // الجدران والأرضية من المخطط. walls فاضية = غرفة افتراضية من bounds
   setRoom(walls, b) {
-    for (const m of this.walls) this.scene.remove(m);
+    for (const m of this.walls) { this.scene.remove(m); dispose(m); }
     this.walls = [];
     const cx = (b.minX + b.maxX) / 2, cz = (b.minY + b.maxY) / 2, w = b.maxX - b.minX, d = b.maxY - b.minY;
     const floor = new Mesh(new PlaneGeometry(w + 0.6, d + 0.6), new MeshStandardMaterial({ color: '#d9cbb3', roughness: 0.9 }));
@@ -130,14 +138,14 @@ export class RoomView {
   // نزامن الأثاث ويه الـ Room (نضيف الجديد، نشيل الممسوح، ونحرّك الباقي)
   sync(items, { ghost = null, selected = null, removing = false } = {}) {
     const live = new Set(items.map((i) => i.id));
-    for (const [id, g] of this.meshes) if (!live.has(id)) { this.scene.remove(g); this.meshes.delete(id); }
+    for (const [id, g] of this.meshes) if (!live.has(id)) { this.scene.remove(g); dispose(g, false); this.meshes.delete(id); }
     for (const it of items) {
       let g = this.meshes.get(it.id);
       if (!g) { g = buildFurniture(it.type); this.meshes.set(it.id, g); this.scene.add(g); }
       g.position.set(it.x, 0, it.y);
       g.rotation.y = -it.rot; // y بالمخطط ينزل لتحت = z بالـ 3D، فالدوران معكوس
     }
-    if (this.ghost && this.ghost.userData.type !== ghost?.type) { this.scene.remove(this.ghost); this.ghost = null; }
+    if (this.ghost && this.ghost.userData.type !== ghost?.type) { this.scene.remove(this.ghost); dispose(this.ghost); this.ghost = null; } // الشبح خاماته منسوخة، فنحررها
     if (ghost) {
       if (!this.ghost) {
         this.ghost = buildFurniture(ghost.type);

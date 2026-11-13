@@ -43,6 +43,7 @@ export class RoomInteraction {
   }
 
   updatePalm(frame, t, out) {
+    if (this.hold) { this.palm = null; return; } // يد وحدة ماسكة شي: ما نمسح بالثانية، حتى التراجع يبقى صحيح
     const h = frame.hands.find((x) => x.gesture === 'OPEN_PALM' && x.floor);
     const item = h && this.room.hitTest(h.floor);
     if (!item) { this.palm = null; return; }

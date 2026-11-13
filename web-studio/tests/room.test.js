@@ -149,6 +149,17 @@ test('two hands move the camera when nothing is selected', () => {
   assert.deepEqual(out.camera, { zoom: 2, rotate: 0.3 });
 });
 
+test('second hand palm cannot delete while the first hand is dragging', () => {
+  const r = new Room(BOUNDS), ui = new RoomInteraction(r);
+  const bed = r.add('bed', { x: 2.5, y: 2 });
+  const drag = (gesture, x) => ({ id: 0, gesture, floor: { x, y: 2 } }), palm = { id: 1, gesture: 'OPEN_PALM', floor: { x: 2.5, y: 2 } };
+  ui.update(frame(drag('FIST', 2.5)), 0);
+  for (let t = 0.1; t <= 1.5; t += 0.1) ui.update(frame(drag('FIST', 3), palm), t);
+  assert.equal(r.items.length, 1);
+  ui.update(frame(palm), 1.6); // اليد الساحبة اختفت: السرير يرجع لمكانه
+  near(r.get(bed.id).x, 2.5);
+});
+
 test('open palm held 1 s over an item removes it', () => {
   const r = new Room(BOUNDS), ui = new RoomInteraction(r);
   r.add('chair', { x: 2, y: 2 });

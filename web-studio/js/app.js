@@ -257,9 +257,21 @@ async function startCamera() {
     return false;
   }
   $('mirror').hidden = false;
+  if (new URLSearchParams(location.search).has('perf')) showPerf();
   $('camera').textContent = 'طفّي الكاميرا';
   $('camera').setAttribute('aria-pressed', 'true');
   return true;
+}
+
+// ?perf بالرابط: أرقام الأداء فوك مراية الكاميرا، حتى تقيس الاستوديو كامل (التتبع + الرسم سوية)
+function showPerf() {
+  // سطر منفصل بعد "الكاميرا شغالة": مؤشر الكاميرا يبقى كامل وواضح
+  const el = document.querySelector('.live').appendChild(document.createElement('span'));
+  const timer = setInterval(() => {
+    const i = state.session?.info;
+    if (!i) { clearInterval(timer); el.remove(); return; }
+    el.textContent = ` | ${i.delegate}, ${i.numHands} يد، نموذج ${i.modelMs?.toFixed(1)} ms، إطار ${i.frameMs?.toFixed(1)} ms، كاميرا ${i.cameraFps?.toFixed(0) ?? '…'} fps`;
+  }, 500);
 }
 
 function stopCamera() {
