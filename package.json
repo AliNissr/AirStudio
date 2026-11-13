@@ -1,0 +1,1 @@
+{"private":true,"type":"module","scripts":{"test":"node --test \"engine/js/*.test.js\" \"web-studio/tests/*.test.js\"","test:visual":"node --test \"web-studio/tests/*.e2e.js\""},"devDependencies":{"playwright-core":"^1.65.0"}}
