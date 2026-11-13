@@ -9,9 +9,9 @@ import json
 import sys
 import time
 
-from . import ENGINE_DIR
+from . import ENGINE_DIR, load_config
 from .camera import Camera, CameraError, LatestFrameReader
-from .gestures import Gesture
+from .gestures import Gesture, GestureClassifier, pinch_ratio
 from .messages import AR
 from .tracker import HandTracker
 
@@ -27,17 +27,26 @@ def main(name: str, gesture: str) -> int:
         for i in (3, 2, 1):
             print(f"سوّي إيماءة {gesture}... {i}")
             time.sleep(1)
-        start = time.perf_counter()
-        while time.perf_counter() - start < 3:
+        # نسجل ثانيتين ونحفظ آخر إطار بيه يد. أول إطار غلط: غالباً بعدك ما سويت الإيماءة
+        print("سجّل! ثبّت الإيماءة...")
+        start, last = time.perf_counter(), None
+        while time.perf_counter() - start < 2:
             hands = tracker.process(cam.read(), int((time.perf_counter() - start) * 1000))
             if hands:
-                data = {"gesture": gesture, "source": "recorded", "landmarks": hands[0].landmarks}
-                path = ENGINE_DIR / "fixtures" / f"{name}.json"
-                path.write_text(json.dumps(data), encoding="utf-8")
-                print(f"انحفظ: {path}")
-                return 0
-        print("ما شفت يد خلال 3 ثواني، جرب مرة ثانية.")
-        return 1
+                last = hands[0].landmarks
+        if last is None:
+            print("ما شفت يد، جرب مرة ثانية.")
+            return 1
+        got = GestureClassifier(load_config()).classify(last)
+        print(f"قياس القرص: {pinch_ratio(last):.2f} (القرص أقل من 0.25)، المصنّف شاف: {got.value}")
+        if got.value != gesture:
+            print(f"ما حفظت: طلبت {gesture} بس اليد كانت {got.value}. إذا متأكد إنك سويتها صح، "
+                  "معناها العتبات تحتاج تعديل بـ gestures.json لإيدك.")
+            return 1
+        path = ENGINE_DIR / "fixtures" / f"{name}.json"
+        path.write_text(json.dumps({"gesture": gesture, "source": "recorded", "landmarks": last}), encoding="utf-8")
+        print(f"انحفظ: {path}")
+        return 0
     finally:
         cam.release()
         tracker.close()
