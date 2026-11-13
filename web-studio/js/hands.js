@@ -72,11 +72,6 @@ export async function startHands({ video, onFrame, onStatus = () => {} }) {
   };
   video.requestVideoFrameCallback(step);
 
-  // للاختبارات بس (?test بالرابط): ندخل يدين جاهزة بدل الكاميرا
-  if (new URLSearchParams(location.search).has('test')) {
-    window.__airInject = (raw, w = 640, h = 480) => onFrame(pipeline.process(raw, performance.now() / 1000, w, h));
-  }
-
   return {
     info,
     stop() {

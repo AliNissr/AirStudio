@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AirStudio Design</title>
+<meta name="description" content="صمّم غرفتك وأثاثها بحركة يدك قدام الكاميرا. كلشي يشتغل داخل متصفحك.">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="bar">
+    <h1 class="brand">AirStudio <span>Design</span></h1>
+    <nav class="modes" aria-label="طريقة العرض">
+      <button class="mode" aria-pressed="true" data-mode="plan">المخطط</button>
+      <button class="mode" aria-pressed="false" data-mode="room" disabled title="تجي بالخطوة الجاية">الغرفة 3D</button>
+    </nav>
+    <div class="actions">
+      <button class="icon" id="sound" aria-pressed="true" title="الأصوات">صوت</button>
+      <button class="icon" id="help" title="شرح الإيماءات">؟</button>
+      <button class="camera" id="camera" aria-pressed="false">شغّل الكاميرا</button>
+    </div>
+  </header>
+
+  <main class="desk">
+    <section class="sheet" id="sheet" aria-label="ورقة الرسم">
+      <p class="empty" id="empty">مخطط غرفتك يبدي هنا.</p>
+      <canvas id="pointers" aria-hidden="true"></canvas>
+    </section>
+
+    <figure class="mirror" id="mirror" hidden>
+      <video id="video" playsinline muted></video>
+      <canvas id="skeleton" width="640" height="480" aria-hidden="true"></canvas>
+      <figcaption class="live"><span class="dot"></span>الكاميرا شغالة</figcaption>
+      <ul class="chips" id="chips" aria-live="polite"></ul>
+    </figure>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <dialog class="onboarding" id="onboarding" aria-labelledby="ob-title">
+    <p class="ob-step" data-step></p>
+    <div class="ob-art" data-art><div class="ob-ring" data-ring></div></div>
+    <h2 id="ob-title" data-title></h2>
+    <p class="ob-body" data-body></p>
+    <ol class="ob-dots" aria-hidden="true"><li data-dot></li><li data-dot></li><li data-dot></li><li data-dot></li><li data-dot></li></ol>
+    <div class="ob-actions">
+      <button class="primary" data-camera>شغّل الكاميرا</button>
+      <button class="ghost" data-next></button>
+      <button class="link" data-skip>تخطّي الشرح</button>
+    </div>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

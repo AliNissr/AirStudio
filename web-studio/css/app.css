@@ -1,0 +1,148 @@
+/* AirStudio Design: طاولة رسم معماري بالليل. الورقة بيضاء، والإطار حولها هادئ. */
+:root {
+  color-scheme: dark;
+  --graphite: #18212c;   /* الخلفية */
+  --slate: #212c3a;      /* الأشرطة */
+  --line: #2f3c4d;       /* حدود */
+  --paper: #fbfaf7;      /* ورقة الرسم */
+  --grid: #e9e6de;       /* شبكة الورقة */
+  --pencil: #e8b341;     /* أصفر قلم المعماري: اللون المميز + اليد الأولى */
+  --teal: #4fc1cf;       /* اليد الثانية */
+  --text: #e4e8ee;
+  --muted: #93a0b1;
+  --rec: #ff5a52;        /* مؤشر الكاميرا */
+  --font: "Segoe UI Variable Text", "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif;
+  --r-sm: 6px;
+  --r-lg: 14px;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--graphite);
+  color: var(--text);
+  font: 15px/1.6 var(--font);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:disabled { cursor: default; opacity: .45; }
+:focus-visible { outline: 2px solid var(--pencil); outline-offset: 2px; }
+
+/* الشريط العلوي */
+.bar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 16px;
+  background: var(--slate);
+  border-bottom: 1px solid var(--line);
+}
+.brand { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: .01em; direction: ltr; }
+.brand span { font-weight: 400; color: var(--muted); }
+.modes { display: flex; background: var(--graphite); border-radius: var(--r-sm); padding: 3px; }
+.mode { background: none; border: 0; padding: 5px 14px; border-radius: 4px; color: var(--muted); }
+.mode[aria-pressed="true"] { background: var(--slate); color: var(--text); }
+.actions { margin-inline-start: auto; display: flex; gap: 8px; align-items: center; }
+.icon {
+  min-width: 36px; height: 36px; padding: 0 10px;
+  background: none; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--muted);
+}
+.icon[aria-pressed="false"] { text-decoration: line-through; }
+.camera {
+  height: 36px; padding: 0 14px;
+  background: var(--pencil); color: #1d1606; border: 0; border-radius: var(--r-sm); font-weight: 600;
+}
+.camera[aria-pressed="true"] { background: none; color: var(--text); border: 1px solid var(--line); font-weight: 400; }
+
+/* مساحة الشغل: الورقة البيضاء تاخذ كل المكان */
+.desk { position: relative; padding: 16px; min-height: 0; }
+.sheet {
+  position: relative; height: 100%;
+  background-color: var(--paper);
+  /* شبكة الورق: خط خفيف كل 24px، وأقوى كل 120px (مثل ورق المهندسين) */
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(#dcd8cd 1px, transparent 1px),
+    linear-gradient(90deg, #dcd8cd 1px, transparent 1px);
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  border-radius: var(--r-sm);
+  box-shadow: 0 1px 0 #0003, 0 12px 40px -12px #0008;
+  overflow: hidden;
+}
+.empty {
+  position: absolute; inset: 0; margin: auto; height: fit-content; text-align: center;
+  color: #8b8678; font-size: 17px;
+}
+#pointers { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* مراية الكاميرا: صغيرة بالزاوية، فيها الهيكل العظمي لليدين */
+.mirror {
+  position: absolute; inset-block-end: 28px; inset-inline-end: 28px; margin: 0;
+  width: 232px; aspect-ratio: 4 / 3;
+  background: #000; border-radius: var(--r-lg); overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px -10px #000a;
+}
+.mirror video, .mirror canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mirror video { transform: scaleX(-1); opacity: .55; }
+.live {
+  position: absolute; inset-block-start: 8px; inset-inline-start: 8px;
+  display: flex; align-items: center; gap: 6px;
+  background: #000b; padding: 2px 10px 2px 8px; border-radius: 99px; font-size: 12px;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rec); animation: rec 2s ease-in-out infinite; }
+@keyframes rec { 50% { opacity: .35; } }
+.chips { position: absolute; inset-block-end: 8px; inset-inline: 8px; margin: 0; padding: 0; list-style: none; display: flex; gap: 6px; flex-wrap: wrap; }
+.chips li { background: #000b; padding: 1px 10px; border-radius: 99px; font-size: 12px; border-inline-start: 3px solid var(--c); }
+
+/* رسائل */
+.toast {
+  position: fixed; inset-block-start: 68px; inset-inline: 0; margin-inline: auto; width: fit-content; max-width: min(560px, calc(100% - 32px));
+  background: var(--slate); border: 1px solid var(--line); border-inline-start: 3px solid var(--pencil);
+  padding: 10px 16px; border-radius: var(--r-sm); box-shadow: 0 10px 30px -10px #000a;
+}
+
+/* الشاشة التعليمية */
+.onboarding {
+  width: min(440px, calc(100% - 32px)); padding: 28px 28px 20px;
+  background: var(--slate); color: var(--text);
+  border: 1px solid var(--line); border-radius: var(--r-lg);
+  text-align: center;
+}
+.onboarding::backdrop { background: #0d131bcc; backdrop-filter: blur(3px); }
+.ob-step { margin: 0; color: var(--muted); font-size: 13px; }
+.ob-art { position: relative; width: 132px; height: 132px; margin: 16px auto 12px; display: grid; place-items: center; font-size: 56px; }
+.ob-art::after { position: relative; }
+.ob-art[data-art="camera"]::after { content: "📷"; }
+.ob-art[data-art="palm"]::after { content: "✋"; }
+.ob-art[data-art="pinch"]::after { content: "🤏"; }
+.ob-art[data-art="fist"]::after { content: "✊"; }
+.ob-art[data-art="two"]::after { content: "🙌"; }
+/* حلقة تمتلي وانت ثابت على الإيماءة */
+.ob-ring {
+  --p: 0;
+  position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(var(--pencil) calc(var(--p) * 360deg), var(--line) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 0);
+          mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 0);
+}
+.onboarding h2 { margin: 0 0 6px; font-size: 22px; }
+.ob-body { margin: 0 auto; max-width: 34ch; color: #c5cdd8; }
+.ob-dots { display: flex; justify-content: center; gap: 6px; padding: 0; margin: 18px 0; list-style: none; }
+.ob-dots li { width: 22px; height: 4px; border-radius: 2px; background: var(--line); }
+.ob-dots li[data-on] { background: var(--pencil); }
+.ob-actions { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.primary { width: 100%; height: 42px; background: var(--pencil); color: #1d1606; border: 0; border-radius: var(--r-sm); font-weight: 600; }
+.ghost { width: 100%; height: 40px; background: none; border: 1px solid var(--line); border-radius: var(--r-sm); }
+.link { background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 4px; }
+
+@media (max-width: 640px) {
+  .bar { flex-wrap: wrap; gap: 8px; }
+  .actions { margin-inline-start: 0; }
+  .desk { padding: 8px; }
+  .mirror { width: 140px; inset-block-end: 16px; inset-inline-end: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dot { animation: none; }
+}
