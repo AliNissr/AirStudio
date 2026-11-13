@@ -59,13 +59,14 @@ button:disabled { cursor: default; opacity: .45; }
 .sheet {
   position: relative; height: 100%;
   background-color: var(--paper);
-  /* شبكة الورق: خط خفيف كل 24px، وأقوى كل 120px (مثل ورق المهندسين) */
+  /* شبكة الورق بالمتر الحقيقي: خط خفيف كل نص متر، وأقوى كل متر. --m يحدده plan_view.js */
+  --m: 96px;
   background-image:
     linear-gradient(var(--grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid) 1px, transparent 1px),
     linear-gradient(#dcd8cd 1px, transparent 1px),
     linear-gradient(90deg, #dcd8cd 1px, transparent 1px);
-  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  background-size: calc(var(--m) / 2) calc(var(--m) / 2), calc(var(--m) / 2) calc(var(--m) / 2), var(--m) var(--m), var(--m) var(--m);
   border-radius: var(--r-sm);
   box-shadow: 0 1px 0 #0003, 0 12px 40px -12px #0008;
   overflow: hidden;
@@ -74,7 +75,24 @@ button:disabled { cursor: default; opacity: .45; }
   position: absolute; inset: 0; margin: auto; height: fit-content; text-align: center;
   color: #8b8678; font-size: 17px;
 }
-#pointers { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#plan, #pointers { position: absolute; inset: 0; width: 100%; height: 100%; }
+#plan { cursor: crosshair; touch-action: none; }
+#pointers { pointer-events: none; }
+
+/* شريط الأدوات: يطفو فوك الورقة بالزاوية */
+.tools {
+  position: absolute; inset-block-start: 12px; inset-inline-start: 12px;
+  display: flex; align-items: center; gap: 2px; padding: 4px;
+  background: var(--slate); border-radius: 10px; box-shadow: 0 6px 20px -8px #000a;
+}
+.tool { background: none; border: 0; border-radius: var(--r-sm); padding: 6px 12px; color: var(--muted); }
+.tool:hover:not(:disabled) { color: var(--text); background: #ffffff0d; }
+.tool[aria-pressed="true"] { background: var(--pencil); color: #1d1606; font-weight: 600; }
+.sep { width: 1px; height: 20px; background: var(--line); margin-inline: 4px; }
+.paused {
+  position: absolute; inset-block-start: 12px; inset-inline-end: 12px; margin: 0;
+  background: var(--pencil); color: #1d1606; padding: 6px 14px; border-radius: var(--r-sm); font-weight: 600;
+}
 
 /* مراية الكاميرا: صغيرة بالزاوية، فيها الهيكل العظمي لليدين */
 .mirror {
@@ -142,6 +160,9 @@ button:disabled { cursor: default; opacity: .45; }
   .actions { margin-inline-start: 0; }
   .desk { padding: 8px; }
   .mirror { width: 140px; inset-block-end: 16px; inset-inline-end: 16px; }
+  .tools { inset-inline: 8px; overflow-x: auto; }
+  .tool { padding: 6px 9px; white-space: nowrap; }
+  .paused { inset-block-start: 64px; inset-inline: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .dot { animation: none; }

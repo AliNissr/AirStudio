@@ -23,8 +23,18 @@
 
   <main class="desk">
     <section class="sheet" id="sheet" aria-label="ورقة الرسم">
-      <p class="empty" id="empty">مخطط غرفتك يبدي هنا.</p>
+      <p class="empty" id="empty">اقرص واسحب حتى ترسم أول جدار، أو اسحب بالماوس.</p>
+      <canvas id="plan" aria-label="مخطط الغرفة"></canvas>
       <canvas id="pointers" aria-hidden="true"></canvas>
+      <div class="tools" role="toolbar" aria-label="أدوات الرسم">
+        <button class="tool" data-tool="wall" aria-pressed="true" title="جدار مستقيم (W)">جدار</button>
+        <button class="tool" data-tool="pen" aria-pressed="false" title="رسم حر (P)">قلم</button>
+        <button class="tool" data-tool="erase" aria-pressed="false" title="ممحاة الماوس (E). باليد: حرّك كفك مفتوحة">ممحاة</button>
+        <span class="sep" aria-hidden="true"></span>
+        <button class="tool" id="undo" title="تراجع (Ctrl+Z)">تراجع</button>
+        <button class="tool" id="clear" title="امسح المخطط كله (تكدر تتراجع)">امسح الكل</button>
+      </div>
+      <p class="paused" id="paused" hidden>الرسم متوقف. ثبّت كفك مفتوحة ثانية ونص حتى تكمل.</p>
     </section>
 
     <figure class="mirror" id="mirror" hidden>
