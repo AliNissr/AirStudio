@@ -48,6 +48,25 @@ async function pixel(page, x, y) {
   }, png.toString('base64'));
 }
 
+test('3D room renders the floor at 2556x1277', async () => {
+  const page = await browser.newPage({ viewport: { width: 2556, height: 1277 } });
+  await page.addInitScript(() => localStorage.setItem('airstudio.onboarded', '1'));
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(base);
+  await page.click('[data-mode="room"]');
+  await page.waitForTimeout(1500);
+  const box = await page.evaluate(() => {
+    const r = document.getElementById('room').getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  // نص المشهد = أرضية الغرفة (بيج فاتح)، مو خلفية داكنة ولا canvas فاضي
+  const rgb = await pixel(page, Math.round(box.x + box.w / 2), Math.round(box.y + box.h * 0.6));
+  assert.ok(rgb[0] > 150 && rgb[0] > rgb[2], `ما بانت الأرضية: rgb(${rgb})`);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
 for (const [w, h] of [[2556, 1277], [930, 1340], [1280, 720]]) {
   test(`sheet is visible and white at ${w}x${h}`, async () => {
     const page = await browser.newPage({ viewport: { width: w, height: h } });

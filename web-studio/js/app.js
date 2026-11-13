@@ -8,6 +8,7 @@ import { blip, unlockSound, setSound, soundOn, GESTURE_TONE } from './sound.js';
 import { Plan } from './plan.js';
 import { PlanInteraction } from './interaction.js';
 import { PlanView } from './plan_view.js';
+import { createRoomMode } from './room_mode.js';
 
 const $ = (id) => document.getElementById(id);
 const HAND_COLORS = ['#e8b341', '#4fc1cf'];
@@ -17,10 +18,11 @@ const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [
 // منطقة وسط الكاميرا اللي تغطي الورقة كاملة: ما تحتاج تمد إيدك لحافة الصورة حتى توصل حافة الورقة
 const REACH = { x0: 0.15, x1: 0.85, y0: 0.15, y1: 0.8 };
 
-const state = { session: null, onboarding: null, lastGesture: new Map(), toastTimer: 0 };
+const state = { session: null, onboarding: null, lastGesture: new Map(), toastTimer: 0, mode: 'plan' };
 const plan = new Plan();
 const gestures = new PlanInteraction(plan); // الإيماءات من الكاميرا
 const view = new PlanView($('plan'), plan);  // الرسم + الماوس
+const roomMode = createRoomMode({ stage: $('sheet'), plan, blip });
 
 // ===== الرسائل =====
 function toast(code, data) {
@@ -65,7 +67,7 @@ function drawPointers(frame) {
     g.stroke();
     if (grab) { g.fillStyle = color + '55'; g.fill(); }
     g.font = '600 13px "Segoe UI", Tahoma, sans-serif';
-    g.fillStyle = '#18212c';
+    g.fillStyle = state.mode === 'room' ? '#e4e8ee' : '#18212c'; // الغرفة خلفيتها داكنة
     g.textAlign = 'center';
     g.fillText(NAMES[hand.gesture], x, y + r + 30);
   }
@@ -119,7 +121,26 @@ function setTool(tool) {
   document.querySelectorAll('[data-tool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === tool)));
 }
 
-function undo() { plan.undo(); view.render({}); updateChrome(); }
+function undo() {
+  if (state.mode === 'room') { roomMode.undo(); return; }
+  plan.undo();
+  view.render({});
+  updateChrome();
+}
+
+// ===== التبديل بين المخطط والغرفة =====
+async function setMode(mode) {
+  state.mode = mode;
+  const inRoom = mode === 'room';
+  for (const id of ['plan', 'empty', 'paused']) $(id).hidden = inRoom;
+  document.querySelector('.tools').hidden = inRoom;
+  $('room').hidden = !inRoom;
+  document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+  gestures.cancel();
+  if (inRoom) await roomMode.enter();
+  else { view.render({}); updateChrome(); }
+}
+document.querySelectorAll('[data-mode]').forEach((b) => { b.onclick = () => setMode(b.dataset.mode); });
 
 document.querySelectorAll('[data-tool]').forEach((b) => { b.onclick = () => setTool(b.dataset.tool); });
 $('undo').onclick = undo;
@@ -128,6 +149,7 @@ view.onChange = updateChrome;
 addEventListener('keydown', (e) => {
   if (e.target.closest('input, textarea, dialog')) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+  if (state.mode === 'room') { if (roomMode.onKey(e)) e.preventDefault(); return; }
   const tool = { w: 'wall', p: 'pen', e: 'erase' }[e.key.toLowerCase()];
   if (tool && !e.ctrlKey && !e.altKey) setTool(tool);
 });
@@ -140,7 +162,10 @@ updateChrome();
 function onFrame(frame, w = 640, h = 480) {
   drawPointers(frame);
   drawSkeleton(frame, w, h);
-  feedPlan(frame);
+  if (state.mode === 'room') {
+    const c = $('pointers');
+    if (!state.onboarding) roomMode.feed(frame, (p) => sheetPoint(p, c.clientWidth, c.clientHeight));
+  } else feedPlan(frame);
   for (const hand of frame.hands) {
     if (state.lastGesture.get(hand.id) !== hand.gesture && GESTURE_TONE[hand.gesture]) blip(GESTURE_TONE[hand.gesture]);
     state.lastGesture.set(hand.id, hand.gesture);
@@ -196,7 +221,7 @@ addEventListener('pagehide', stopCamera); // نطفي الكاميرا لما ت
 if (new URLSearchParams(location.search).has('test')) {
   const pipeline = new HandPipeline(await loadConfig());
   window.__airInject = (raw, w = 640, h = 480) => onFrame(pipeline.process(raw, performance.now() / 1000, w, h), w, h);
-  window.__air = { plan, gestures, view };
+  window.__air = { plan, gestures, view, roomMode, setMode };
 }
 
 if (!seenOnboarding()) openOnboarding();

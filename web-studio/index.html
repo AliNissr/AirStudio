@@ -13,7 +13,7 @@
     <h1 class="brand">AirStudio <span>Design</span></h1>
     <nav class="modes" aria-label="طريقة العرض">
       <button class="mode" aria-pressed="true" data-mode="plan">المخطط</button>
-      <button class="mode" aria-pressed="false" data-mode="room" disabled title="تجي بالخطوة الجاية">الغرفة 3D</button>
+      <button class="mode" aria-pressed="false" data-mode="room">الغرفة 3D</button>
     </nav>
     <div class="actions">
       <button class="icon" id="sound" aria-pressed="true" title="الأصوات">صوت</button>
@@ -36,6 +36,26 @@
         <button class="tool" id="clear" title="امسح المخطط كله (تكدر تتراجع)">امسح الكل</button>
       </div>
       <p class="paused" id="paused" hidden>الرسم متوقف. ثبّت كفك مفتوحة ثانية ونص حتى تكمل.</p>
+
+      <!-- الغرفة 3D: نفس مساحة الورقة، والـ canvas حق three.js ينضاف هنا -->
+      <div class="room" id="room" hidden>
+        <div class="palette" role="toolbar" aria-label="الأثاث: اقرص على قطعة واسحبها للغرفة">
+          <button class="piece" data-type="sofa">كنبة</button>
+          <button class="piece" data-type="table">طاولة</button>
+          <button class="piece" data-type="chair">كرسي</button>
+          <button class="piece" data-type="bed">سرير</button>
+          <button class="piece" data-type="wardrobe">خزانة</button>
+          <span class="sep" aria-hidden="true"></span>
+          <button class="piece" id="rotate" title="دوّر القطعة المختارة 90° (R)" disabled>دوّر 90°</button>
+          <button class="piece" id="remove" title="احذف القطعة المختارة (Delete). باليد: ثبّت كفك فوقها ثانية" disabled>احذف</button>
+        </div>
+        <div class="views" role="toolbar" aria-label="زاوية العرض">
+          <button class="tool" data-view="persp" aria-pressed="true">منظور</button>
+          <button class="tool" data-view="top" aria-pressed="false">من فوك</button>
+          <button class="tool" data-view="front" aria-pressed="false">أمامي</button>
+          <button class="tool" data-view="side" aria-pressed="false">جانبي</button>
+        </div>
+      </div>
     </section>
 
     <figure class="mirror" id="mirror" hidden>

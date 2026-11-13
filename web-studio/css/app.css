@@ -89,6 +89,23 @@ button:disabled { cursor: default; opacity: .45; }
 .tool:hover:not(:disabled) { color: var(--text); background: #ffffff0d; }
 .tool[aria-pressed="true"] { background: var(--pencil); color: #1d1606; font-weight: 600; }
 .sep { width: 1px; height: 20px; background: var(--line); margin-inline: 4px; }
+
+/* الغرفة 3D */
+.room { position: absolute; inset: 0; }
+.room canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.palette {
+  position: absolute; inset-inline-start: 12px; inset-block-start: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 4px; padding: 6px;
+  background: var(--slate); border-radius: 10px; box-shadow: 0 6px 20px -8px #000a;
+}
+.palette .sep { width: auto; height: 1px; margin: 4px 2px; }
+/* أزرار الأثاث كبيرة: لازم المؤشر باليد يوصلها بسهولة */
+.piece { min-width: 96px; min-height: 44px; background: none; border: 1px solid transparent; border-radius: var(--r-sm); color: var(--text); }
+.piece:hover:not(:disabled), .piece[data-hover] { border-color: var(--pencil); background: #e8b3411a; }
+.views {
+  position: absolute; inset-block-start: 12px; inset-inline: 0; margin-inline: auto; width: fit-content;
+  display: flex; gap: 2px; padding: 4px; background: var(--slate); border-radius: 10px; box-shadow: 0 6px 20px -8px #000a;
+}
 .paused {
   position: absolute; inset-block-start: 12px; inset-inline-end: 12px; margin: 0;
   background: var(--pencil); color: #1d1606; padding: 6px 14px; border-radius: var(--r-sm); font-weight: 600;
