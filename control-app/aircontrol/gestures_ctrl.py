@@ -107,6 +107,8 @@ class ControlGestures:
 
         # ===== لمسات الإبهام (نقر، سحب، قائمة) =====
         dist = {f: _seg_dist(pts[4], pts[a], pts[b]) / size for f, (a, b) in SEGMENTS.items()}
+        if not is_extended(pts, "middle", c["extend_ratio"]):
+            dist["middle"] = math.inf  # الوسطى ملفوفة: الإبهام يرتاح فوكها طبيعي، مو نقر يمين
         if pose == "fist":
             touching = None  # بالقبضة الإبهام فوك الأصابع بالصدفة: مو نقرة
         elif self.contact and dist[self.contact] < c["tap_exit"]:

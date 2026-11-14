@@ -25,7 +25,7 @@ class Overlay(QWidget):
         self.mon, self.dpr, self.primary = monitor, screen.devicePixelRatio(), primary
         self.setScreen(screen)
         self.setGeometry(screen.geometry())
-        self.ctrl, self.extra = None, {}
+        self.ctrl, self.extra, self.was_busy = None, {}, False
 
     def local(self, x, y):
         return QPointF((x - self.mon.left) / self.dpr, (y - self.mon.top) / self.dpr)

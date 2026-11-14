@@ -40,22 +40,19 @@ class Bridge(QObject):
 class TrackerWorker(threading.Thread):
     """يقرا الكاميرا ويتتبع اليد بخيط منفصل حتى الواجهة ما تتجمد."""
 
-    def __init__(self, bridge, want_hands):
+    def __init__(self, bridge, want_hands, cpu):
         super().__init__(daemon=True)
-        self.bridge, self.want_hands = bridge, want_hands  # want_hands: دالة ترجع 1 أو 2
+        self.bridge, self.want_hands, self.cpu = bridge, want_hands, cpu  # دوال: 1 أو 2 يد، ونسبة المعالج
         self.running, self.fps, self.frames = True, 0.0, 0
 
     def run(self):
+        cam = tracker = None
         try:
             cam = LatestFrameReader(Camera())
-        except CameraError as e:
-            self.bridge.error.emit(e.code)
-            return
-        n = self.want_hands()
-        tracker = HandTracker(num_hands=n)
-        rate, start, count, window = AdaptiveRate(), time.perf_counter(), 0, time.perf_counter()
-        last_hand = 0.0
-        try:
+            n = self.want_hands()
+            tracker = HandTracker(num_hands=n)  # داخل try: نموذج مفقود = رسالة عربي، والكاميرا تنسكر
+            rate, start, count, window = AdaptiveRate(), time.perf_counter(), 0, time.perf_counter()
+            last_hand = 0.0
             while self.running:
                 t0 = time.perf_counter()
                 if self.want_hands() != n:  # يدين وقت الانتظار، يد وحدة وقت التحكم (~33 ms للتبديل)
@@ -72,12 +69,15 @@ class TrackerWorker(threading.Thread):
                 count += 1
                 if t0 - window >= 1:
                     self.fps, count, window = count / (t0 - window), 0, t0
-                time.sleep(max(0.0, rate.next_interval(t0 - last_hand < 1, 0, t0) - (time.perf_counter() - t0)))
+                # المعالج فوك الحد = نخفف الإطارات (من الخطة الأصلية)
+                time.sleep(max(0.0, rate.next_interval(t0 - last_hand < 1, self.cpu(), t0) - (time.perf_counter() - t0)))
         except CameraError as e:
             self.bridge.error.emit(e.code)
         finally:
-            cam.release()
-            tracker.close()
+            if cam:
+                cam.release()
+            if tracker:
+                tracker.close()
 
 
 def tray_icon(color):
@@ -125,10 +125,10 @@ def main(argv=None):
         o.show()
 
     bridge = Bridge()
-    worker = TrackerWorker(bridge, lambda: ctrl.want_hands)
-    watcher = InputWatcher(lambda name: bridge.real.emit() if name == "real_input" else bridge.hotkey.emit(name)).start()
     meter = CpuMeter()
-    stats = {"cpu": 0.0, "elevated": False, "last_mode": OFF, "calib": None}
+    stats = {"cpu": 0.0, "elevated": False, "calib": None}
+    worker = TrackerWorker(bridge, lambda: ctrl.want_hands, lambda: stats["cpu"])
+    watcher = InputWatcher(lambda name: bridge.real.emit() if name == "real_input" else bridge.hotkey.emit(name)).start()
 
     # ===== tray =====
     tray = QSystemTrayIcon(tray_icon("#93a0b1"))
@@ -186,7 +186,12 @@ def main(argv=None):
             left = calib["until"] - time.perf_counter()
             extra["message"] = f"معايرة: حرّك إيدك لأبعد مكان مريح بكل الاتجاهات ({max(0, left):.0f})"
         for o in overlays:
-            o.refresh(ctrl, extra)
+            # نعيد رسم الشاشة بس إذا عليها شي هسه أو كان عليها بالإطار السابق (حتى ينمسح)، مو 4 شاشات كل إطار
+            busy = o.primary or o.mine(*view["pos"]) or (ctrl.radial and o.mine(*ctrl.radial.center)) \
+                or (ctrl.keyboard and o.mine(*ctrl.keyboard.origin))
+            if busy or o.was_busy:
+                o.refresh(ctrl, extra)
+            o.was_busy = bool(busy)
 
     def on_hotkey(name):
         ctrl.on_hotkey(name, time.perf_counter())

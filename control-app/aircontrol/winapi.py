@@ -106,6 +106,8 @@ class InputWatcher:
         self._ready.wait(2)
         return self
 
+    # shortcut: الـ hooks بـ Python تحتاج الـ GIL، فإذا خيط ثاني ماسكه، حركة الماوس الحقيقي تتأخر شوية،
+    # وويندوز يشيل الـ hook إذا تأخر هواية. الكود هنا أقل ما يمكن. إذا لاحظت تقطيع بالماوس، ننقلها لـ C صغير.
     def _real(self):
         now = time.monotonic()
         if now - self._last_real > 0.1:  # أكثر شي 10 إشعارات بالثانية

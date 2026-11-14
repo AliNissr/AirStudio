@@ -15,6 +15,8 @@ FIXED = {"fist_hold", "both_palms", "open_palm"}
 NEEDS_ARGS = {"move", "type_text", "key", "drag_start", "drag_end", "scroll", "zoom", "alt_tab"}
 BINDABLE = (set(ALLOWED) - NEEDS_ARGS) | {"drag", "scroll", "zoom", "alt_tab", "radial_menu", "none"}
 RADIAL_ITEMS = (set(ALLOWED) - NEEDS_ARGS) | {"keyboard"}
+# حركات مستمرة تطلع عشرات الأحداث بالحركة الوحدة: ما تنربط بأمر مفرد (يتكرر عشر مرات)
+CONTINUOUS = {"two_finger_move": {"scroll", "zoom", "none"}, "three_finger_vertical": {"scroll", "zoom", "none"}}
 
 DEFAULT_BINDINGS = {
     "tap_index": "click", "double_tap_index": "double_click", "tap_middle": "right_click",
@@ -39,7 +41,8 @@ def load_bindings(path: Path):
         if not isinstance(raw, dict):
             raise ValueError("مو كائن JSON")
         b = raw.get("bindings", {})
-        if not isinstance(b, dict) or any(g not in GESTURES or a not in BINDABLE for g, a in b.items()):
+        if not isinstance(b, dict) or any(g not in GESTURES or a not in BINDABLE or a not in CONTINUOUS.get(g, BINDABLE)
+                                          for g, a in b.items()):
             raise ValueError("ربط غير صالح")
         radial = raw.get("radial", DEFAULT_RADIAL)
         if not isinstance(radial, list) or not 0 < len(radial) <= 12 or any(r not in RADIAL_ITEMS for r in radial):

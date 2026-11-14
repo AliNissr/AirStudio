@@ -176,12 +176,15 @@ class Controller:
                         continue
                 if self.bindings["hold_index"] == "drag":
                     self.send(Command("drag_start" if data["phase"] == "start" else "drag_end"), t)
-                else:
+                elif data["phase"] == "start":  # أمر مفرد: مرة وحدة بالبداية، مو مرة ثانية بالفك
                     self.run_action(self.bindings["hold_index"], t)
-            elif name == "two_finger_move" and self.bindings[name] == "scroll":
-                self.send(Command("scroll", data), t)
-            elif name == "three_finger_vertical" and self.bindings[name] == "zoom":
-                self.send(Command("zoom", data), t)
+            elif name in ("two_finger_move", "three_finger_vertical"):
+                # حركة مستمرة: الربط مسموح بس لتمرير أو تكبير أو لا شي (bindings.CONTINUOUS)
+                amount = data.get("steps", data.get("dy", 0))
+                if self.bindings[name] == "scroll":
+                    self.send(Command("scroll", {"dx": data.get("dx", 0), "dy": amount}), t)
+                elif self.bindings[name] == "zoom" and amount:
+                    self.send(Command("zoom", {"steps": amount}), t)
             elif name == "three_finger_swipe" and self.bindings[name] == "alt_tab":
                 self.send(Command("alt_tab", data), t)
             elif name in self.bindings:

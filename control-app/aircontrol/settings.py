@@ -45,7 +45,14 @@ def save(settings, path=CONFIG):
     path.parent.mkdir(parents=True, exist_ok=True)
     raw = _read(path)
     raw.update({k: settings[k] for k in DEFAULTS})
-    path.write_text(json.dumps(raw, ensure_ascii=False, indent=1), encoding="utf-8")
+    _write_atomic(path, json.dumps(raw, ensure_ascii=False, indent=1))
+
+
+def _write_atomic(path, text):
+    """نكتب ملف مؤقت وبعدين نبدّله بخطوة وحدة: إذا انطفى الجهاز بالنص، الملف القديم يبقى سليم."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def load_words(path=WORDS):
@@ -55,4 +62,4 @@ def load_words(path=WORDS):
 def save_words(learned, path=WORDS):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(learned, ensure_ascii=False), encoding="utf-8")
+    _write_atomic(path, json.dumps(learned, ensure_ascii=False))

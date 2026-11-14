@@ -86,6 +86,8 @@ def test_custom_binding_accepted(tmp_path):
     {"bindings": {"fist_hold": "click"}},                  # الإيقاف الطارئ ما يتغير
     {"bindings": {"both_palms": "click"}},                 # التفعيل ما يتغير
     {"bindings": {"unknown_gesture": "click"}},
+    {"bindings": {"two_finger_move": "volume_up"}},        # حركة مستمرة لأمر مفرد = يتكرر 10 مرات
+    {"bindings": {"three_finger_vertical": "paste"}},
     {"radial": ["copy", "shutdown"]},
     {"radial": ["copy"] * 13},
     "{not json",

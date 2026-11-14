@@ -36,7 +36,7 @@ def main(name: str, seconds: float, hands: int) -> int:
     except CameraError as e:
         print(AR[e.code])
         return 1
-    frames = []
+    frames, w, h = [], 0, 0
     try:
         for i in (3, 2, 1):
             print(f"{name}: نبدي بعد {i}...")

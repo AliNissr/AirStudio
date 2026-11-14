@@ -80,6 +80,11 @@ def test_middle_tap_and_hold():
     assert names([([hand("two")], 5), ([hand("two", thumb="middle")], 30), ([hand("two")], 5)]) == ["hold_middle"]
 
 
+def test_thumb_resting_on_folded_middle_is_not_a_right_click():
+    # وضع إشارة (الوسطى ملفوفة) والإبهام مرتاح فوكها: لا نقر يمين ولا قائمة
+    assert names([([hand()], 5), ([hand(thumb="tucked")], 30), ([hand()], 5)]) == []
+
+
 def test_open_palm_is_clutch_and_fast_sideways_palm_swipes_once():
     _, _, st = play([([hand("open")], 5)])
     assert st["clutch"] is True

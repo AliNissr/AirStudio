@@ -89,6 +89,15 @@ def test_drag_maps_to_start_and_end():
     assert names(out) == ["drag_start", "drag_end"]
 
 
+def test_rebound_hold_fires_once_not_on_release():
+    c, out = make()
+    c.bindings["hold_index"] = "paste"
+    c.on_hotkey("activate", 0)
+    step(c, 2, ("hold_index", {"phase": "start"}))
+    step(c, 3, ("hold_index", {"phase": "end"}))
+    assert names(out) == ["paste"]
+
+
 def test_scroll_and_zoom_carry_amounts():
     c, out = make()
     c.on_hotkey("activate", 0)
