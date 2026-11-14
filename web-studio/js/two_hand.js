@@ -1,5 +1,5 @@
 // طبقة اليدين "النقية": بدون كاميرا ولا صفحة، حتى نختبرها بـ node على نفس fixtures المحرك.
-import { GestureClassifier } from '../../engine/js/gestures.js';
+import { GestureClassifier, pinchRatio } from '../../engine/js/gestures.js';
 import { OneEuroFilter } from '../../engine/js/one_euro.js';
 
 const ANCHOR = 9; // قاعدة الوسطى: أثبت نقطة باليد (ما تتحرك لما تقرص أو تسكّر)
@@ -84,6 +84,7 @@ export class HandPipeline {
         id: m.id,
         side: m.side,
         gesture: s.classifier.update(p),
+        pinch: pinchRatio(p), // شكد الإبهام قريب من السبابة: المؤشر يمتلي بالتدريج
         pointer: { x: s.fx.filter(x, t) / w, y: s.fy.filter(y, t) / h },
         landmarks: p,
       };

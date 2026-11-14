@@ -77,7 +77,11 @@ button:disabled { cursor: default; opacity: .45; }
 }
 #plan, #pointers { position: absolute; inset: 0; width: 100%; height: 100%; }
 #plan { cursor: crosshair; touch-action: none; }
-#pointers { pointer-events: none; }
+/* طبقة المؤشر فوك كلشي (الـ 3D والقوائم) بـ z-index صريح، مو بترتيب العناصر بالصفحة.
+   كانت تحت #room لأن الاثنين z-index: auto والأخير بالصفحة ينرسم فوك. */
+#pointers { pointer-events: none; z-index: 20; }
+/* أي زر تحت مؤشر اليد يضيء */
+button[data-hover]:not(:disabled) { outline: 2px solid var(--pencil); outline-offset: 2px; background-color: #e8b34126; }
 
 /* شريط الأدوات: يطفو فوك الورقة بالزاوية */
 .tools {

@@ -15,7 +15,7 @@ export function createRoomMode({ stage, plan, blip }) {
 
   function refresh(extra = {}) {
     last = { ...last, ...extra };
-    view?.sync(room.items, { ghost: last.ghost, selected: ui.selected, removing: last.removeProgress > 0 });
+    view?.sync(room.items, { ghost: last.ghost, selected: ui.selected, hover: last.hover, removing: last.removeProgress > 0 });
     $('rotate').disabled = $('remove').disabled = !ui.selected;
     $('room-undo').disabled = !room.history.length;
   }
@@ -94,14 +94,15 @@ export function createRoomMode({ stage, plan, blip }) {
     // frame من HandPipeline + toPx: يحوّل مؤشر اليد لبكسل داخل الحاوية
     feed(frame, toPx) {
       if (!view) return;
-      const rects = pieces.map((b) => [b, b.getBoundingClientRect()]), origin = $('room').getBoundingClientRect();
-      pieces.forEach((b) => b.removeAttribute('data-hover'));
+      const origin = $('room').getBoundingClientRect();
       const hands = frame.hands.map((h) => {
-        const p = toPx(h.pointer), cx = origin.x + p.x, cy = origin.y + p.y;
-        const over = rects.find(([, r]) => cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom)?.[0];
-        over?.setAttribute('data-hover', '');
+        const p = toPx(h.pointer);
+        const over = document.elementFromPoint(origin.x + p.x, origin.y + p.y)?.closest('button'); // فوك زر؟ (إضاءته بـ app.js)
         return { id: h.id, gesture: h.gesture, palette: over?.dataset.type, floor: over ? null : view.floorAt(p.x, p.y) };
       });
+      // القطعة تحت أول يد تضيء (غير "المختارة")
+      const floor = hands.find((h) => h.floor)?.floor;
+      last.hover = floor ? room.hitTest(floor)?.id ?? null : null;
       const count = room.items.length;
       const out = ui.update({ hands, two: frame.two }, performance.now() / 1000);
       if (out.camera) view.applyGesture(out.camera); else view.endGesture();

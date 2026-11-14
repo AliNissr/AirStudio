@@ -49,7 +49,9 @@ export class RoomView {
     this.ghost = null;
     this.highlight = new BoxHelper(undefined, '#e8b341');
     this.highlight.visible = false;
-    this.scene.add(this.highlight);
+    this.hoverBox = new BoxHelper(undefined, '#f6dc9a'); // القطعة تحت المؤشر: أفتح من "المختارة"
+    this.hoverBox.visible = false;
+    this.scene.add(this.highlight, this.hoverBox);
     this.orbit = { ...PRESETS.persp, dist: 9, target: new Vector3() };
     this.raycaster = new Raycaster();
     this.floorPlane = new Plane(new Vector3(0, 1, 0), 0);
@@ -136,7 +138,7 @@ export class RoomView {
   }
 
   // نزامن الأثاث ويه الـ Room (نضيف الجديد، نشيل الممسوح، ونحرّك الباقي)
-  sync(items, { ghost = null, selected = null, removing = false } = {}) {
+  sync(items, { ghost = null, selected = null, hover = null, removing = false } = {}) {
     const live = new Set(items.map((i) => i.id));
     for (const [id, g] of this.meshes) if (!live.has(id)) { this.scene.remove(g); dispose(g, false); this.meshes.delete(id); }
     for (const it of items) {
@@ -160,6 +162,9 @@ export class RoomView {
       this.highlight.setFromObject(sel);
       this.highlight.material.color.set(removing ? '#e5484d' : '#e8b341');
     }
+    const hov = hover !== selected && hover && this.meshes.get(hover);
+    this.hoverBox.visible = Boolean(hov);
+    if (hov) this.hoverBox.setFromObject(hov);
     this.render();
   }
 

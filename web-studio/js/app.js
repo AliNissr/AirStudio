@@ -9,6 +9,7 @@ import { Plan } from './plan.js';
 import { PlanInteraction } from './interaction.js';
 import { PlanView } from './plan_view.js';
 import { createRoomMode } from './room_mode.js';
+import { pointerStyle } from './pointer.js';
 import { serialize, parseDesign, applyDesign, MAX_BYTES } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
@@ -54,24 +55,55 @@ function drawPointers(frame) {
   g.clearRect(0, 0, w, h);
   for (const hand of frame.hands) {
     const { x, y } = sheetPoint(hand.pointer, w, h);
-    const color = HAND_COLORS[hand.id % 2], grab = hand.gesture === 'PINCH' || hand.gesture === 'FIST';
-    // علامة تصويب مثل أدوات الرسم: دائرة + 4 خطوط. تصغر وتمتلي لما تمسك
-    const r = grab ? 9 : 16;
-    g.strokeStyle = color;
-    g.lineWidth = 2;
-    g.beginPath();
-    g.arc(x, y, r, 0, Math.PI * 2);
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      g.moveTo(x + dx * (r + 4), y + dy * (r + 4));
-      g.lineTo(x + dx * (r + 12), y + dy * (r + 12));
-    }
+    const color = HAND_COLORS[hand.id % 2], { radius: r, fill, solid } = pointerStyle(hand.gesture, hand.pinch ?? 1);
+    // علامة تصويب: دائرة + 4 خطوط. نرسم ظل غامق أول حتى يبين فوك الورقة البيضاء والغرفة الداكنة سوا
+    const shape = () => {
+      g.beginPath();
+      g.arc(x, y, r, 0, Math.PI * 2);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        g.moveTo(x + dx * (r + 4), y + dy * (r + 4));
+        g.lineTo(x + dx * (r + 12), y + dy * (r + 12));
+      }
+    };
+    g.lineCap = 'round';
+    g.strokeStyle = '#18212cb0';
+    g.lineWidth = 5;
+    shape();
     g.stroke();
-    if (grab) { g.fillStyle = color + '55'; g.fill(); }
+    g.strokeStyle = color;
+    g.lineWidth = 2.5;
+    shape();
+    g.stroke();
+    if (fill > 0) { // الحلقة تمتلي من النص للحافة كلما قرّبت الإبهام
+      g.fillStyle = solid || hand.gesture === 'PINCH' ? color : `${color}88`;
+      g.beginPath();
+      g.arc(x, y, r * fill, 0, Math.PI * 2);
+      g.fill();
+    }
     g.font = '600 13px "Segoe UI", Tahoma, sans-serif';
-    g.fillStyle = state.mode === 'room' ? '#e4e8ee' : '#18212c'; // الغرفة خلفيتها داكنة
     g.textAlign = 'center';
+    g.lineWidth = 3;
+    g.strokeStyle = state.mode === 'room' ? '#18212c' : '#fbfaf7';
+    g.strokeText(NAMES[hand.gesture], x, y + r + 30);
+    g.fillStyle = state.mode === 'room' ? '#e4e8ee' : '#18212c'; // الغرفة خلفيتها داكنة
     g.fillText(NAMES[hand.gesture], x, y + r + 30);
   }
+  updateHover(frame, w, h);
+}
+
+// الزر تحت المؤشر يضيء. طبقة المؤشر ما تمسك الماوس (pointer-events: none)، فـ elementFromPoint يرجع اللي تحتها
+const hovered = new Set();
+function updateHover(frame, w, h) {
+  const origin = $('pointers').getBoundingClientRect(), now = new Set();
+  for (const hand of frame.hands) {
+    const p = sheetPoint(hand.pointer, w, h);
+    const btn = document.elementFromPoint(origin.x + p.x, origin.y + p.y)?.closest('button');
+    if (btn) now.add(btn);
+  }
+  for (const b of hovered) if (!now.has(b)) b.removeAttribute('data-hover');
+  for (const b of now) b.setAttribute('data-hover', '');
+  hovered.clear();
+  now.forEach((b) => hovered.add(b));
 }
 
 function drawSkeleton(frame, w, h) {

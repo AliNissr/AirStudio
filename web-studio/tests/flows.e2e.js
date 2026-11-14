@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { setup, openStudio, installHands } from './e2e_setup.js';
+import { setup, openStudio, installHands, pixel } from './e2e_setup.js';
 
 let env;
 before(async () => { env = await setup(); });
@@ -63,6 +63,31 @@ test('place a sofa from the palette, then two hands zoom the camera', async () =
   const afterDist = await page.evaluate(() => __air.roomMode.view.orbit.dist);
   assert.ok(afterDist < before * 0.6, `الكاميرا ما قرّبت: ${before} ← ${afterDist}`); // تبعّد اليدين = تقرّب
   assert.deepEqual(page.errors, []);
+  await page.context().close();
+});
+
+test('pointer is visible above the 3D room', async () => {
+  const page = await studio();
+  await page.click('[data-mode="room"]');
+  await page.waitForFunction(() => __air.roomMode.view);
+  const p = await at(page, 0.5, 0.75); // على أرض الغرفة
+  await page.evaluate(async (p) => window.__hold([{ fixture: 'fist', ...p }], 8), p);
+  // قبضة = دائرة مملوءة باللون الأصفر بنص المؤشر. نقرا بكسل الشاشة الحقيقي
+  const rgb = await pixel(page, Math.round(p.x), Math.round(p.y));
+  assert.ok(rgb[0] > 200 && rgb[1] > 140 && rgb[2] < 120, `المؤشر مو ظاهر فوك الغرفة: rgb(${rgb})`);
+  await page.context().close();
+});
+
+test('button under the pointer lights up, in plan and room', async () => {
+  const page = await studio();
+  const center = async (sel) => { const b = await page.locator(sel).boundingBox(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; };
+  await page.evaluate(async (p) => window.__hold([{ fixture: 'open_palm', ...p }], 4), await center('[data-tool="pen"]'));
+  assert.equal(await page.getAttribute('[data-tool="pen"]', 'data-hover'), '');
+  await page.click('[data-mode="room"]');
+  await page.waitForFunction(() => __air.roomMode.view);
+  await page.evaluate(async (p) => window.__hold([{ fixture: 'open_palm', ...p }], 4), await center('[data-view="top"]'));
+  assert.equal(await page.getAttribute('[data-view="top"]', 'data-hover'), '');
+  assert.equal(await page.getAttribute('[data-tool="pen"]', 'data-hover'), null); // القديم انطفى
   await page.context().close();
 });
 
