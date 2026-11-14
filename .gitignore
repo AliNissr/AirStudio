@@ -7,3 +7,5 @@ dist/
 node_modules/
 .claude/
 .playwright-mcp/
+# تسجيلات يدك الحقيقية: خاصة، ما تنرفع
+engine/fixtures/seq/

@@ -1,3 +1,5 @@
 # مكتبات التشغيل (mediapipe يجيب وياه opencv-contrib-python و numpy، فلا تضيف opencv-python لأنهم يتعارضون)
 mediapipe==1.2.3
 psutil==7.2.2
+# واجهة AirControl (الطبقة فوق الشاشة، tray). LGPL-3.0
+PySide6-Essentials==6.12.0
